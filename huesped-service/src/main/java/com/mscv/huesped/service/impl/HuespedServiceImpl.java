@@ -4,6 +4,8 @@ import com.mscv.huesped.entity.Calificacion;
 import com.mscv.huesped.entity.Hotel;
 import com.mscv.huesped.entity.Huesped;
 import com.mscv.huesped.exception.ResourceNotFoundException;
+import com.mscv.huesped.external.service.CalificacionService;
+import com.mscv.huesped.external.service.HotelService;
 import com.mscv.huesped.repository.HuespedRepository;
 import com.mscv.huesped.service.HuespedService;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,12 @@ public class HuespedServiceImpl implements HuespedService {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private HotelService hotelService;
+
+    @Autowired
+    private CalificacionService calificacionService;
 
     @Autowired
     private HuespedRepository huespedRepository;
@@ -43,19 +51,28 @@ public class HuespedServiceImpl implements HuespedService {
         Huesped huesped = huespedRepository
                 .findById(huespedId)
                 .orElseThrow(()->new ResourceNotFoundException("Huesped no encontrado con ID : " + huespedId));
-        Calificacion[]  calificacionesDelHuesped = restTemplate
-                // .getForObject("http://localhost:8083/calificaciones/huespedes/" + huesped.getHuespedId(), Calificacion[].class);
-                .getForObject("http://CALIFICACION-SERVICE/calificaciones/huespedes/" + huesped.getHuespedId(), Calificacion[].class);
 
-        List<Calificacion> calificaciones = Arrays.asList(calificacionesDelHuesped);
+//        REST TEMPLATE
+//        Calificacion[]  calificacionesDelHuesped = restTemplate
+//                // .getForObject("http://localhost:8083/calificaciones/huespedes/" + huesped.getHuespedId(), Calificacion[].class);
+//                .getForObject("http://CALIFICACION-SERVICE/calificaciones/huespedes/" + huesped.getHuespedId(), Calificacion[].class);
+//        List<Calificacion> calificaciones = Arrays.asList(calificacionesDelHuesped);
+//      OPEN FEIGN
+        List<Calificacion> calificaciones = calificacionService.calificacionesHuesped(huesped.getHuespedId());
 
         List<Calificacion> listaCalificaciones = calificaciones.stream().map(calificacion -> {
             System.out.println("Hotel ID: " + calificacion.getHotelId());
-            ResponseEntity<Hotel> forEntity = restTemplate
-                    // .getForEntity("http://localhost:8082/hoteles/" + calificacion.getHotelId(), Hotel.class);
-                    .getForEntity("http://HOTEL-SERVICE/hoteles/" + calificacion.getHotelId(), Hotel.class);
-            Hotel hotel = forEntity.getBody();
-            log.info("Respuesta con codigo de estado: {}", forEntity.getStatusCode());
+
+//            REST TEMPLATE
+//            ResponseEntity<Hotel> forEntity = restTemplate
+//                    // .getForEntity("http://localhost:8082/hoteles/" + calificacion.getHotelId(), Hotel.class);
+//                    .getForEntity("http://HOTEL-SERVICE/hoteles/" + calificacion.getHotelId(), Hotel.class);
+//            Hotel hotel = forEntity.getBody();
+//            log.info("Respuesta con codigo de estado: {}", forEntity.getStatusCode());
+
+//            OPEN FEIGN
+            Hotel hotel =hotelService.getHotel(calificacion.getHotelId());
+
             calificacion.setHotel(hotel);
             return calificacion;
         }).toList();
