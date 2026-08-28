@@ -1,17 +1,27 @@
 package com.mscv.huesped.service.impl;
 
+import com.mscv.huesped.entity.Calificacion;
+import com.mscv.huesped.entity.Hotel;
 import com.mscv.huesped.entity.Huesped;
 import com.mscv.huesped.exception.ResourceNotFoundException;
 import com.mscv.huesped.repository.HuespedRepository;
 import com.mscv.huesped.service.HuespedService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class HuespedServiceImpl implements HuespedService {
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Autowired
     private HuespedRepository huespedRepository;
@@ -30,7 +40,26 @@ public class HuespedServiceImpl implements HuespedService {
 
     @Override
     public Huesped getHuesped(String huespedId) {
-        return huespedRepository.findById(huespedId)
+        Huesped huesped = huespedRepository
+                .findById(huespedId)
                 .orElseThrow(()->new ResourceNotFoundException("Huesped no encontrado con ID : " + huespedId));
+        Calificacion[]  calificacionesDelHuesped = restTemplate
+                .getForObject("http://localhost:8083/calificaciones/huespedes/" + huesped.getHuespedId(), Calificacion[].class);
+
+        List<Calificacion> calificaciones = Arrays.asList(calificacionesDelHuesped);
+
+        List<Calificacion> listaCalificaciones = calificaciones.stream().map(calificacion -> {
+            System.out.println("Hotel ID: " + calificacion.getHotelId());
+            ResponseEntity<Hotel> forEntity = restTemplate
+                    .getForEntity("http://localhost:8082/hoteles/" + calificacion.getHotelId(), Hotel.class);
+            Hotel hotel = forEntity.getBody();
+            log.info("Respuesta con codigo de estado: {}", forEntity.getStatusCode());
+            calificacion.setHotel(hotel);
+            return calificacion;
+        }).toList();
+        log.info("Calificaciones del Huesped : {}", calificaciones);
+        // huesped.setCalificaciones(calificaciones);   // Contiene solo las calificaciones
+        huesped.setCalificaciones(listaCalificaciones); // Contiene las calificaciones y hoteles
+        return huesped;
     }
 }
