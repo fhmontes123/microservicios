@@ -28,3 +28,31 @@ eureka:
     register-with-eureka: true
     service-url:
       defaultZone: http://localhost:8761/eureka
+
+# Configuracion que expone informacion detallada del estado de salud de la aplicacion
+management:
+  health:
+    circuitbreakers:
+      enabled: true           # Activa indicadores de salud para circuit breakers
+  endpoints:
+    web:
+      exposure:
+        include: health         # Expone solo el endpoint /actuator/health
+  endpoint:
+    health:
+      show-details: always    # Muestra detalles completos del health check
+
+# Configuracion de Resilience4j
+resilience4j:
+  circuitbreaker:
+    instances:
+      huespedServiceBreaker:             # Nombre del circuito
+        registerHealthIndicator: true    # Registra en /actuator/health
+        eventConsumerBufferSize: 10      # Tamaño buffer de eventos
+        failureRateThreshold: 50         # % fallos para abrir circuito (50%)
+        minimumNumberOfCalls: 5          # Mínimo llamadas para calcular tasa
+        automaticTransitionFromOpenToHalfOpenEnabled: true  # Paso automático a Half-Open
+        waitDurationInOpenState: 6s      # Tiempo en OPEN antes de Half-Open
+        permittedNumberOfCallsInHalfOpenState: 3  # Llamadas permitidas en Half-Open
+        slidingWindowSize: 10            # Tamaño ventana deslizante (10 llamadas)
+        slidingWindowType: COUNT_BASED   # Tipo: cuenta de llamadas (no tiempo)
