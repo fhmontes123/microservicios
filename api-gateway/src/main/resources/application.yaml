@@ -5,6 +5,9 @@ spring:
   application:
     name: api-gateway
 
+  # ==============================================
+  # Configuracion de rutas del Gateway
+  # ==============================================
   cloud:
     gateway:
       server:
@@ -25,6 +28,18 @@ spring:
               predicates:
                 - Path=/calificaciones/**
 
+  # ==============================================
+  # Punto de entrada para los clientes (MICROSERVICIOS)
+  # ==============================================
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/proyecto01-microservicios-realm
+
+# ==============================================
+# Configuración de Eureka Server
+# ==============================================
 eureka:
   instance:
     prefer-ip-address: true
