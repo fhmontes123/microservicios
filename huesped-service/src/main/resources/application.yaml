@@ -56,3 +56,10 @@ resilience4j:
         permittedNumberOfCallsInHalfOpenState: 3  # Llamadas permitidas en Half-Open
         slidingWindowSize: 10            # Tamaño ventana deslizante (10 llamadas)
         slidingWindowType: COUNT_BASED   # Tipo: cuenta de llamadas (no tiempo)
+
+  # Configuracion de Retry
+  retry:
+    instances:
+      huespedServiceRetry: # Nombre del retry (debe coincidir con @Retry)
+        max-attempts: 3    # Número máximo de intentos
+        wait-duration: 5s  # Tiempo de espera entre cada reintento

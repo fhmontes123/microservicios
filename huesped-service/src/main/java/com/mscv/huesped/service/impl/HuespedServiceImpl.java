@@ -9,6 +9,7 @@ import com.mscv.huesped.external.service.HotelService;
 import com.mscv.huesped.repository.HuespedRepository;
 import com.mscv.huesped.service.HuespedService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -48,8 +49,15 @@ public class HuespedServiceImpl implements HuespedService {
         return huespedRepository.findAll();
     }
 
+    private int cantidadReintentos = 1;
+
     @CircuitBreaker(name = "huespedServiceBreaker", fallbackMethod = "fallbackHuesped")
+    @Retry(name = "huespedServiceRetry", fallbackMethod = "fallbackHuesped")
     public Huesped getHuesped(String huespedId) {
+        log.info("Listar un solo huesped: HuespedServiceImpl");
+        log.info("Cantidad de intentos: {}", cantidadReintentos);
+        cantidadReintentos++;
+
         Huesped huesped = huespedRepository
                 .findById(huespedId)
                 .orElseThrow(()->new ResourceNotFoundException("Huesped no encontrado con ID : " + huespedId));
@@ -86,6 +94,7 @@ public class HuespedServiceImpl implements HuespedService {
 
     public Huesped fallbackHuesped(String huespedId, Exception exception){
         Huesped huesped = huespedRepository.findById(huespedId).orElseThrow();
+        log.info("Ejecutando fallbackHuesped: {}", huesped);
         huesped.setInformacionAdicional("Algunos servicios no estan disponibles");
         huesped.setCalificaciones(new ArrayList<>());
         return huesped;
